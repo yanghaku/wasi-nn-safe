@@ -1,0 +1,27 @@
+[package]
+name = "wasi-nn-safe"
+version = "0.0.0"
+edition = "2021"
+authors = ["bo.yang@smail.nju.edu.cn"]
+categories = ["API bindings", "webassembly", "wasm"]
+keywords = ["webassembly", "wasm", "neural-network"]
+license-file = "LICENSE"
+readme = "README.md"
+documentation = "https://docs.rs/wasi-nn-safe"
+repository = "https://github.com/yanghaku/wasi-nn-safe"
+description = "High-level and Safe Rust API bindings for wasi-nn system calls"
+publish = true
+
+include = [
+    "LICENSE",
+    "README.md",
+    "Cargo.toml",
+    "/src",
+]
+
+[dependencies]
+thiserror = "1"
+
+[dev-dependencies]
+wasi-nn = "0.3.0"
+rand = "0.8"
