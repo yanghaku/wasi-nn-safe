@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use rand::distributions::Uniform;
 use rand::Rng;
 
@@ -24,6 +26,7 @@ pub fn change_f32_to_u8(input: &Vec<f32>) -> Vec<u8> {
     v
 }
 
+#[cfg(all(target_arch = "wasm32", target_os = "wasi"))]
 pub unsafe fn get_wasi_nn_output(
     graph_binary: &Vec<u8>,
     input: &Vec<f32>,

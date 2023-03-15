@@ -90,45 +90,9 @@
 
 mod error;
 mod graph;
+mod syscall;
 mod tensor;
 mod utils;
-
-#[cfg(target_arch = "wasm32")]
-mod wasi_nn_sys_call {
-    #[link(wasm_import_module = "wasi_ephemeral_nn")]
-    extern "C" {
-        pub fn load(
-            graph_builder_array_ptr: usize,
-            graph_builder_array_len: usize,
-            encoding: u32,
-            target: u32,
-            graph_result_ptr: usize,
-        ) -> u32;
-        pub fn init_execution_context(graph: u32, context_result_ptr: usize) -> u32;
-        pub fn set_input(context: u32, index: usize, tensor_ptr: usize) -> u32;
-        pub fn get_output(
-            context: u32,
-            index: usize,
-            out_buffer_ptr: usize,
-            out_buffer_max_size: usize,
-            result_buffer_size_ptr: usize,
-        ) -> u32;
-        pub fn compute(context: u32) -> u32;
-    }
-
-    #[cfg(test)]
-    mod test {
-        #[test]
-        fn test_bytes_in_wasm32() {
-            assert_eq!(std::mem::size_of::<usize>(), std::mem::size_of::<u32>());
-            assert_eq!(std::mem::size_of::<u32>(), std::mem::size_of::<i32>());
-            assert_eq!(
-                std::mem::size_of::<usize>(),
-                std::mem::size_of::<*const u8>()
-            );
-        }
-    }
-}
 
 pub use error::Error;
 pub use graph::{Graph, GraphBuilder, GraphEncoding, GraphExecutionContext, GraphExecutionTarget};

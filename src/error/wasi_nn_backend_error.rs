@@ -1,29 +1,14 @@
-/// wasi-nn-safe API error enum
-#[derive(thiserror::Error, Debug)]
-pub enum Error {
-    #[error("Wasi-NN Backend Error: {0}")]
-    BackendError(#[from] BackendError),
-    #[error("IO Error: {0}")]
-    IoError(#[from] std::io::Error),
-    #[error("Get Output Length Error: Expect `{expect}`, but got `{got}`")]
-    OutputLengthError { expect: usize, got: usize },
-    #[error(
-        "Invalid Tensor: Expect data buffer has at least `{expect}` bytes, but it has only `actual` bytes "
-    )]
-    InvalidTensorError { expect: usize, actual: usize },
-}
-
 #[derive(thiserror::Error, Debug)]
 pub enum BackendError {
-    #[error("Invalid Argument")]
+    #[error("WASI-NN Backend Error: Caller module passed an invalid argument")]
     InvalidArgument,
-    #[error("Invalid Encoding")]
+    #[error("WASI-NN Backend Error: Invalid Encoding")]
     InvalidEncoding,
-    #[error("Missing Memory")]
+    #[error("WASI-NN Backend Error: Caller module is missing a memory export")]
     MissingMemory,
-    #[error("Busy")]
+    #[error("WASI-NN Backend Error: Device or resource busy")]
     Busy,
-    #[error("Runtime Error")]
+    #[error("WASI-NN Backend Error: Runtime Error")]
     RuntimeError,
     #[error("Unknown Wasi-NN Backend Error Code `{0}`")]
     UnknownError(u32),
@@ -59,7 +44,7 @@ mod test {
     }
 
     #[test]
-    fn test_backend_error_from_u32() {
+    fn test_wasi_nn_backend_error_from_u32() {
         test_enum_eq!(1, BackendError, InvalidArgument);
         test_enum_eq!(2, BackendError, InvalidEncoding);
         test_enum_eq!(3, BackendError, MissingMemory);

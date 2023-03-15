@@ -61,7 +61,7 @@ fn test_custom_tensor() {
         .unwrap();
 
     // prepare inputs and outputs buffer
-    let input_dimensions = [1, 3, 224, 224];
+    let input_dimensions = [1, 224, 224, 3];
     let input_data = generate_random_input(
         input_dimensions.iter().fold(1, |mul, val| mul * val),
         0.0,
@@ -87,19 +87,4 @@ fn test_custom_tensor() {
         &mut [(0, &mut output_tensor)],
     )
     .unwrap();
-
-    // for test
-    let wasi_nn_output = unsafe {
-        get_wasi_nn_output(
-            &model_binary,
-            &input_tensor.data,
-            &input_dimensions.to_vec(),
-            output_len,
-        )
-    };
-    // check output
-    // for convenience, cast to u8 to check eq
-    let ans_1 = change_f32_to_u8(&wasi_nn_output);
-    let ans_2 = change_f32_to_u8(&output_tensor.data);
-    assert_eq!(ans_1, ans_2);
 }

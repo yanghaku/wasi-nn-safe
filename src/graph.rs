@@ -1,6 +1,5 @@
-use crate::error::{BackendError, Error};
-use crate::tensor::{Tensor, TensorType, ToTensor};
-use crate::utils::SharedSlice;
+use crate::tensor::Tensor;
+use crate::{syscall, Error, SharedSlice, TensorType, ToTensor};
 
 /// Describes the encoding of the graph. This allows the API to be implemented by various backends
 /// that encode (i.e., serialize) their graph IR with different formats.
@@ -98,27 +97,6 @@ impl GraphBuilder {
         self
     }
 
-    #[cfg(target_arch = "wasm32")]
-    #[inline]
-    fn wasi_nn_syscall_load(&self, graph_builder_array: &[&[u8]]) -> Result<u32, Error> {
-        let mut graph_handle = 0;
-        let res = unsafe {
-            crate::wasi_nn_sys_call::load(
-                graph_builder_array.as_ptr() as usize,
-                graph_builder_array.len(),
-                self.encoding as u32,
-                self.target as u32,
-                &mut graph_handle as *mut _ as usize,
-            )
-        };
-
-        if res == 0 {
-            Ok(graph_handle)
-        } else {
-            Err(Error::BackendError(BackendError::from(res)))
-        }
-    }
-
     #[inline(always)]
     pub fn build_from_shared_slices(
         self,
@@ -127,7 +105,8 @@ impl GraphBuilder {
         let graph_contents = Vec::from(graph_builder_slices.as_ref());
         let graph_builder_array: Vec<&[u8]> = graph_contents.iter().map(|s| s.as_ref()).collect();
 
-        let graph_handle = self.wasi_nn_syscall_load(graph_builder_array.as_slice())?;
+        let graph_handle =
+            syscall::load(graph_builder_array.as_slice(), self.encoding, self.target)?;
         Ok(Graph {
             build_info: self,
             graph_handle,
@@ -145,7 +124,8 @@ impl GraphBuilder {
         let graph_contents: Vec<SharedSlice<u8>> =
             bytes_array.map(|v| SharedSlice::from(v)).collect();
         let graph_builder_array: Vec<&[u8]> = graph_contents.iter().map(|s| s.as_ref()).collect();
-        let graph_handle = self.wasi_nn_syscall_load(graph_builder_array.as_slice())?;
+        let graph_handle =
+            syscall::load(graph_builder_array.as_slice(), self.encoding, self.target)?;
         Ok(Graph {
             build_info: self,
             graph_handle,
@@ -190,7 +170,7 @@ impl GraphBuilder {
 pub struct Graph {
     build_info: GraphBuilder,
     graph_contents: Vec<SharedSlice<u8>>,
-    graph_handle: u32,
+    graph_handle: syscall::GraphHandle,
 }
 
 impl Graph {
@@ -209,51 +189,26 @@ impl Graph {
         &self.graph_contents
     }
 
-    #[cfg(target_arch = "wasm32")]
     #[inline(always)]
     pub fn init_execution_context(&self) -> Result<GraphExecutionContext, Error> {
-        let mut ctx_handle = 0;
-        let res = unsafe {
-            crate::wasi_nn_sys_call::init_execution_context(
-                self.graph_handle,
-                &mut ctx_handle as *mut _ as usize,
-            )
-        };
-
-        if res == 0 {
-            Ok(GraphExecutionContext {
-                graph: self,
-                ctx_handle,
-            })
-        } else {
-            Err(Error::BackendError(BackendError::from(res)))
-        }
+        let ctx_handle = syscall::init_execution_context(&self.graph_handle)?;
+        Ok(GraphExecutionContext {
+            graph: self,
+            ctx_handle,
+        })
     }
 }
 
 /// Bind a [`Graph`] to the input and output [`ToTensor`]s for an inference.
 pub struct GraphExecutionContext<'a> {
     graph: &'a Graph,
-    ctx_handle: u32,
+    ctx_handle: syscall::GraphExecutionContextHandle,
 }
 
 impl<'a> GraphExecutionContext<'a> {
     #[inline(always)]
     pub fn graph(&self) -> &Graph {
         self.graph
-    }
-
-    #[cfg(target_arch = "wasm32")]
-    #[inline(always)]
-    fn wasi_nn_syscall_set_input(&mut self, index: usize, tensor: Tensor) -> Result<(), Error> {
-        let res = unsafe {
-            crate::wasi_nn_sys_call::set_input(self.ctx_handle, index, &tensor as *const _ as usize)
-        };
-        if res == 0 {
-            Ok(())
-        } else {
-            Err(Error::BackendError(BackendError::from(res)))
-        }
     }
 
     /// Set input uses the `data`, not only [u8], but also [f32], [i32], etc.
@@ -271,14 +226,14 @@ impl<'a> GraphExecutionContext<'a> {
             )
         };
         let tensor_for_call = Tensor::new(dimensions, tensor_type, buf);
-        self.wasi_nn_syscall_set_input(index, tensor_for_call)
+        syscall::set_input(&mut self.ctx_handle, index, tensor_for_call)
     }
 
     /// Copy the tensor contents to model buffer.
     #[inline(always)]
     pub fn set_input_tensor(&mut self, index: usize, tensor: &impl ToTensor) -> Result<(), Error> {
         let tensor_for_call = Tensor::from(tensor);
-        self.wasi_nn_syscall_set_input(index, tensor_for_call)
+        syscall::set_input(&mut self.ctx_handle, index, tensor_for_call)
     }
 
     #[inline(always)]
@@ -291,42 +246,15 @@ impl<'a> GraphExecutionContext<'a> {
     {
         for (index, tensor) in tensors.as_ref() {
             let tensor_for_call = Tensor::from(*tensor);
-            self.wasi_nn_syscall_set_input(*index, tensor_for_call)?;
+            syscall::set_input(&mut self.ctx_handle, *index, tensor_for_call)?;
         }
         Ok(())
     }
 
     /// Compute the inference on the given inputs.
-    #[cfg(target_arch = "wasm32")]
     #[inline(always)]
     pub fn compute(&mut self) -> Result<(), Error> {
-        let res = unsafe { crate::wasi_nn_sys_call::compute(self.ctx_handle) };
-        if res == 0 {
-            Ok(())
-        } else {
-            Err(Error::BackendError(BackendError::from(res)))
-        }
-    }
-
-    #[cfg(target_arch = "wasm32")]
-    #[inline(always)]
-    fn wasi_nn_syscall_get_output(&self, index: usize, out_buf: &mut [u8]) -> Result<usize, Error> {
-        let mut out_size = 0;
-        let res = unsafe {
-            crate::wasi_nn_sys_call::get_output(
-                self.ctx_handle,
-                index,
-                out_buf.as_mut_ptr() as usize,
-                out_buf.len(),
-                &mut out_size as *mut _ as usize,
-            )
-        };
-
-        if res == 0 {
-            Ok(out_size)
-        } else {
-            Err(Error::BackendError(BackendError::from(res)))
-        }
+        syscall::compute(&mut self.ctx_handle)
     }
 
     /// Copy output tensor to `out_buffer`, return the out **byte size**.
@@ -338,7 +266,7 @@ impl<'a> GraphExecutionContext<'a> {
                 out_buffer.len() * std::mem::size_of::<T>(),
             )
         };
-        self.wasi_nn_syscall_get_output(index, out_buf)
+        syscall::get_output(&self.ctx_handle, index, out_buf)
     }
 
     /// Extract the outputs after inference and save to [`ToTensor`].
@@ -358,7 +286,7 @@ impl<'a> GraphExecutionContext<'a> {
             });
         }
 
-        let out_size = self.wasi_nn_syscall_get_output(index, out_buf)?;
+        let out_size = syscall::get_output(&self.ctx_handle, index, out_buf)?;
         if expect_out_size != out_size {
             Err(Error::OutputLengthError {
                 expect: expect_out_size,
@@ -384,6 +312,7 @@ mod test {
     }
 
     #[test]
+    #[cfg(all(target_arch = "wasm32", target_os = "wasi"))]
     fn test_graph_encoding_with_wasi_nn() {
         assert_eq!(
             GraphEncoding::Onnx as u32,
@@ -415,6 +344,7 @@ mod test {
     }
 
     #[test]
+    #[cfg(all(target_arch = "wasm32", target_os = "wasi"))]
     fn test_graph_execution_target_with_wasi_nn() {
         assert_eq!(
             GraphExecutionTarget::CPU as u32,

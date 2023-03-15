@@ -32,6 +32,7 @@ fn test_doc_example() {
 }
 
 #[test]
+#[cfg(all(target_arch = "wasm32", target_os = "wasi"))]
 fn test_inference() {
     // load and build graph
     let model_binary = std::fs::read(MODEL_FILE).unwrap();
@@ -40,7 +41,7 @@ fn test_inference() {
         .unwrap();
 
     // prepare inputs and outputs buffer
-    let input_dimensions = [1, 3, 224, 224];
+    let input_dimensions = [1, 224, 224, 3];
     let input_data = generate_random_input(
         input_dimensions.iter().fold(1, |mul, val| mul * val),
         0.0,

@@ -23,5 +23,7 @@ include = [
 thiserror = "1"
 
 [dev-dependencies]
-wasi-nn = "0.3.0"
 rand = "0.8"
+
+[target.wasm32-wasi.dev-dependencies]
+wasi-nn = "0.3.0"
