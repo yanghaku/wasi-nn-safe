@@ -63,51 +63,37 @@ fn test(model_path: &'static str) -> Result<(), wasi_nn_safe::Error> {
 ```rust
 use wasi_nn_safe::{GraphBuilder, GraphExecutionContext, TensorType, ToTensor};
 
-struct MyTensor {
-    tp: TensorType,
-    dim: Vec<usize>,
-    data: Vec<u8>,
+pub struct MyMedia {
+    // some fields
 }
 
-// impl trait `ToTensor`, and it can used for inference.
-impl ToTensor for MyTensor {
+impl ToTensor for MyMedia {
     fn tensor_type(&self) -> TensorType {
-        self.tp
+        TensorType::F32
     }
+
     fn dimensions(&self) -> &[usize] {
-        &self.dim
+        &[]
     }
+
+    /// Media to tensor data
     fn buffer_for_read(&self) -> &[u8] {
-        &self.data
-    }
-    fn buffer_for_write(&mut self) -> &mut [u8] {
-        &mut self.data
+        unimplemented!()
     }
 }
 
-// do inference using input tensors and output tensors
 fn do_inference(
     ctx: &mut GraphExecutionContext,
-    inputs: &[(usize, &MyTensor)],
-    outputs: &mut [(usize, &mut MyTensor)],
-) -> Result<(), wasi_nn_safe::Error> {
-    ctx.set_input_tensors(inputs)?;
+    input_media: &MyMedia,
+    output_len: usize,
+) -> Result<Vec<f32>, wasi_nn_safe::Error> {
+    // just use `MyMedia` as input.
+    ctx.set_input_tensor(0, input_media)?;
     ctx.compute()?;
-    for (index, tensor) in outputs.iter_mut() {
-        ctx.output_to_tensor(*index, *tensor)?;
-    }
-    Ok(())
-}
 
-// if only one input tensor and one output tensor:
-fn do_inference_(
-    ctx: &mut GraphExecutionContext,
-    input: &MyTensor,
-    output: &mut MyTensor,
-) -> Result<(), wasi_nn_safe::Error> {
-    ctx.set_input_tensor(0, input)?;
-    ctx.compute()?;
-    ctx.output_to_tensor(0, output)
+    let mut buf = vec![0f32; output_len];
+    ctx.get_output(0, &mut buf)?;
+    Ok(buf)
 }
 ```
 

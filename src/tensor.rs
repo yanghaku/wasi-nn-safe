@@ -21,7 +21,7 @@ impl TensorType {
 }
 
 /// Trait for [`crate::GraphExecutionContext`]'s input and output.
-/// Every Object which impl [`ToTensor`] can be used in `set_input` and `get_output`.
+/// Every Object which impl [`ToTensor`] can be used in `set_input`.
 ///
 // wasi-nn will check that ```mul(dimensions()) >= data.len()```, we do not need check it.
 pub trait ToTensor {
@@ -31,9 +31,6 @@ pub trait ToTensor {
 
     /// used in `set_input`
     fn buffer_for_read(&self) -> &[u8];
-
-    /// used in `get_output`
-    fn buffer_for_write(&mut self) -> &mut [u8];
 }
 
 #[repr(C)]

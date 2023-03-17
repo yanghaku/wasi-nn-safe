@@ -12,9 +12,6 @@ pub enum Error {
     #[error("IO Error: {0}")]
     IoError(#[from] std::io::Error),
 
-    #[error("Get Output Length Error: Expect `{expect}`, but got `{got}`")]
-    OutputLengthError { expect: usize, got: usize },
-
     #[error(
         "Invalid Tensor: Expect data buffer has at least `{expect}` bytes, but it has only `actual` bytes "
     )]

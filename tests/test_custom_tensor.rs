@@ -5,55 +5,42 @@ use wasi_nn_safe::{
 
 mod common;
 
-struct MyTensor {
-    tp: TensorType,
-    dim: Vec<usize>,
-    data: Vec<f32>,
+pub struct MyMedia {
+    // some fields
 }
 
-impl ToTensor for MyTensor {
+impl ToTensor for MyMedia {
     fn tensor_type(&self) -> TensorType {
-        self.tp
+        TensorType::F32
     }
 
     fn dimensions(&self) -> &[usize] {
-        &self.dim
+        &[]
     }
 
+    /// Media to tensor data
     fn buffer_for_read(&self) -> &[u8] {
-        unsafe {
-            core::slice::from_raw_parts(
-                self.data.as_ptr() as *const u8,
-                self.data.len() * std::mem::size_of::<f32>(),
-            )
-        }
-    }
-
-    fn buffer_for_write(&mut self) -> &mut [u8] {
-        unsafe {
-            core::slice::from_raw_parts_mut(
-                self.data.as_mut_ptr() as *mut u8,
-                self.data.len() * std::mem::size_of::<f32>(),
-            )
-        }
+        unimplemented!()
     }
 }
 
 fn do_inference(
     ctx: &mut GraphExecutionContext,
-    inputs: &[(usize, &MyTensor)],
-    outputs: &mut [(usize, &mut MyTensor)],
-) -> Result<(), Box<dyn std::error::Error>> {
-    ctx.set_input_tensors(inputs)?;
+    input_media: &MyMedia,
+    output_len: usize,
+) -> Result<Vec<f32>, wasi_nn_safe::Error> {
+    // just use `MyMedia` as input.
+    ctx.set_input_tensor(0, input_media)?;
     ctx.compute()?;
-    for (index, tensor) in outputs.iter_mut() {
-        ctx.output_to_tensor(*index, *tensor)?;
-    }
-    Ok(())
+
+    let mut buf = vec![0f32; output_len];
+    ctx.get_output(0, &mut buf)?;
+    Ok(buf)
 }
 
+#[should_panic]
 #[test]
-fn test_custom_tensor() {
+fn test_to_tensor_impl() {
     // load and build graph
     let model_binary = std::fs::read(MODEL_FILE).unwrap();
     let graph = GraphBuilder::new(GraphEncoding::TensorflowLite, GraphExecutionTarget::CPU)
@@ -61,30 +48,10 @@ fn test_custom_tensor() {
         .unwrap();
 
     // prepare inputs and outputs buffer
-    let input_dimensions = [1, 224, 224, 3];
-    let input_data = generate_random_input(
-        input_dimensions.iter().fold(1, |mul, val| mul * val),
-        0.0,
-        255.0,
-    );
+    let input_data = MyMedia {};
     let output_len = 1001;
-    let input_tensor = MyTensor {
-        tp: TensorType::F32,
-        dim: input_dimensions.to_vec(),
-        data: input_data,
-    };
-    let mut output_tensor = MyTensor {
-        tp: TensorType::F32,
-        dim: vec![1, output_len],
-        data: vec![0f32; output_len],
-    };
 
     // do inference
     let mut graph_exec_ctx = graph.init_execution_context().unwrap();
-    do_inference(
-        &mut graph_exec_ctx,
-        &[(0, &input_tensor)],
-        &mut [(0, &mut output_tensor)],
-    )
-    .unwrap();
+    do_inference(&mut graph_exec_ctx, &input_data, output_len).unwrap();
 }

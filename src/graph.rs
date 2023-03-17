@@ -268,34 +268,6 @@ impl<'a> GraphExecutionContext<'a> {
         };
         syscall::get_output(&self.ctx_handle, index, out_buf)
     }
-
-    /// Extract the outputs after inference and save to [`ToTensor`].
-    #[inline(always)]
-    pub fn output_to_tensor(&self, index: usize, tensor: &mut impl ToTensor) -> Result<(), Error> {
-        let expect_out_size = tensor
-            .dimensions()
-            .iter()
-            .fold(tensor.tensor_type().byte_size(), |mul, val| mul * val);
-        let out_buf = tensor.buffer_for_write();
-
-        // check buf size
-        if expect_out_size > out_buf.len() {
-            return Err(Error::InvalidTensorError {
-                expect: expect_out_size,
-                actual: out_buf.len(),
-            });
-        }
-
-        let out_size = syscall::get_output(&self.ctx_handle, index, out_buf)?;
-        if expect_out_size != out_size {
-            Err(Error::OutputLengthError {
-                expect: expect_out_size,
-                got: out_size,
-            })
-        } else {
-            Ok(())
-        }
-    }
 }
 
 #[cfg(test)]
