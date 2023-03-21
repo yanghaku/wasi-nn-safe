@@ -20,7 +20,7 @@ unsafe [wasi-nn] APIs.
 
 ```toml
 [dependencies]
-wasi-nn-safe = "0.0.1"
+wasi-nn-safe = "0"
 ```
 
 ## Quick Start
