@@ -20,18 +20,10 @@ unsafe [wasi-nn] APIs.
 
 ```toml
 [dependencies]
-wasi-nn-safe = "0.0.0"
+wasi-nn-safe = "0.0.1"
 ```
 
-> Note
->
-> This crate is experimental and will change to adapt the upstream [wasi-nn specification].
->
-> Now version is based on git commit ```0f77c48ec195748990ff67928a4b3eef5f16c2de```
-
-## Examples
-
-### Quick Start
+## Quick Start
 
 ```rust
 use wasi_nn_safe::{GraphBuilder, TensorType};
@@ -40,6 +32,7 @@ fn test(model_path: &'static str) -> Result<(), wasi_nn_safe::Error> {
     // prepare input and output buffer.
     let input = vec![0f32; 224 * 224 * 3];
     let input_dim = vec![1, 224, 224, 3];
+    // the input and output buffer can be any sized type, such as u8, f32, etc.
     let mut output_buffer = vec![0f32; 1001];
 
     // build a tflite graph from file.  (graph builder default with tflite and cpu).
@@ -58,44 +51,11 @@ fn test(model_path: &'static str) -> Result<(), wasi_nn_safe::Error> {
 }
 ```
 
-### Use custom tensor object as input or output
+## Note
 
-```rust
-use wasi_nn_safe::{GraphBuilder, GraphExecutionContext, TensorType, ToTensor};
+This crate is experimental and will change to adapt the upstream [wasi-nn specification].
 
-pub struct MyMedia {
-    // some fields
-}
-
-impl ToTensor for MyMedia {
-    fn tensor_type(&self) -> TensorType {
-        TensorType::F32
-    }
-
-    fn dimensions(&self) -> &[usize] {
-        &[]
-    }
-
-    /// Media to tensor data
-    fn buffer_for_read(&self) -> &[u8] {
-        unimplemented!()
-    }
-}
-
-fn do_inference(
-    ctx: &mut GraphExecutionContext,
-    input_media: &MyMedia,
-    output_len: usize,
-) -> Result<Vec<f32>, wasi_nn_safe::Error> {
-    // just use `MyMedia` as input.
-    ctx.set_input_tensor(0, input_media)?;
-    ctx.compute()?;
-
-    let mut buf = vec![0f32; output_len];
-    ctx.get_output(0, &mut buf)?;
-    Ok(buf)
-}
-```
+Now version is based on git commit ```0f77c48ec195748990ff67928a4b3eef5f16c2de```
 
 ## Related Links
 

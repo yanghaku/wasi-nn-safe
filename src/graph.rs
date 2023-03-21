@@ -1,5 +1,5 @@
 use crate::tensor::Tensor;
-use crate::{syscall, Error, SharedSlice, TensorType, ToTensor};
+use crate::{syscall, Error, SharedSlice, TensorType};
 
 /// Describes the encoding of the graph. This allows the API to be implemented by various backends
 /// that encode (i.e., serialize) their graph IR with different formats.
@@ -199,7 +199,7 @@ impl Graph {
     }
 }
 
-/// Bind a [`Graph`] to the input and output [`ToTensor`]s for an inference.
+/// Bind a [`Graph`] to the input and output for an inference.
 pub struct GraphExecutionContext<'a> {
     graph: &'a Graph,
     ctx_handle: syscall::GraphExecutionContextHandle,
@@ -227,28 +227,6 @@ impl<'a> GraphExecutionContext<'a> {
         };
         let tensor_for_call = Tensor::new(dimensions, tensor_type, buf);
         syscall::set_input(&mut self.ctx_handle, index, tensor_for_call)
-    }
-
-    /// Copy the tensor contents to model buffer.
-    #[inline(always)]
-    pub fn set_input_tensor(&mut self, index: usize, tensor: &impl ToTensor) -> Result<(), Error> {
-        let tensor_for_call = Tensor::from(tensor);
-        syscall::set_input(&mut self.ctx_handle, index, tensor_for_call)
-    }
-
-    #[inline(always)]
-    pub fn set_input_tensors<'t, T>(
-        &mut self,
-        tensors: impl AsRef<[(usize, &'t T)]>,
-    ) -> Result<(), Error>
-    where
-        T: ToTensor + 't,
-    {
-        for (index, tensor) in tensors.as_ref() {
-            let tensor_for_call = Tensor::from(*tensor);
-            syscall::set_input(&mut self.ctx_handle, *index, tensor_for_call)?;
-        }
-        Ok(())
     }
 
     /// Compute the inference on the given inputs.

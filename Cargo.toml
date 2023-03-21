@@ -1,6 +1,6 @@
 [package]
 name = "wasi-nn-safe"
-version = "0.0.0"
+version = "0.0.1"
 edition = "2021"
 authors = ["bo.yang@smail.nju.edu.cn"]
 categories = ["API bindings", "webassembly", "wasm"]

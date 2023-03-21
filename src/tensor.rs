@@ -20,38 +20,11 @@ impl TensorType {
     }
 }
 
-/// Trait for [`crate::GraphExecutionContext`]'s input and output.
-/// Every Object which impl [`ToTensor`] can be used in `set_input`.
-///
-// wasi-nn will check that ```mul(dimensions()) >= data.len()```, we do not need check it.
-pub trait ToTensor {
-    fn tensor_type(&self) -> TensorType;
-
-    fn dimensions(&self) -> &[usize];
-
-    /// used in `set_input`
-    fn buffer_for_read(&self) -> &[u8];
-}
-
 #[repr(C)]
 pub(crate) struct Tensor<'t> {
     pub dimensions: &'t [usize],
     pub tensor_type: TensorType,
     pub data: &'t [u8],
-}
-
-impl<'t, T> From<&'t T> for Tensor<'t>
-where
-    T: ToTensor,
-{
-    #[inline(always)]
-    fn from(t: &'t T) -> Self {
-        Self {
-            dimensions: t.dimensions(),
-            tensor_type: t.tensor_type(),
-            data: t.buffer_for_read(),
-        }
-    }
 }
 
 impl<'t> Tensor<'t> {
