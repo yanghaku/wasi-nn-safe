@@ -10,3 +10,7 @@ opt-level = 3
 strip = true
 lto = true
 codegen-units = 1
+
+[package.metadata.docs.rs]
+# only build for wasm32-wasi now
+targets = ["wasm32-wasi"]
