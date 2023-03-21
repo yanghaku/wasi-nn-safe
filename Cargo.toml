@@ -1,6 +1,6 @@
 [package]
 name = "wasi-nn-safe"
-version = "0.0.3"
+version = "0.0.4"
 edition = "2021"
 authors = ["bo.yang@smail.nju.edu.cn"]
 categories = ["api-bindings", "wasm"]
@@ -11,6 +11,11 @@ documentation = "https://docs.rs/wasi-nn-safe"
 repository = "https://github.com/yanghaku/wasi-nn-safe"
 description = "High-level and Safe Rust API bindings for wasi-nn system calls"
 publish = true
+
+[package.metadata.docs.rs]
+# only build for wasm32-wasi now
+default-target = "wasm32-wasi"
+targets = ["wasm32-wasi"]
 
 include = [
     "LICENSE",
