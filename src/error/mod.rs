@@ -1,10 +1,8 @@
-#[cfg_attr(
-    all(target_arch = "wasm32", target_os = "wasi"),
-    path = "wasi_nn_backend_error.rs"
-)]
-pub(crate) mod backend_error;
+#[cfg(all(target_arch = "wasm32", target_os = "wasi"))]
+pub(crate) mod wasi_nn_backend_error;
 
-pub(crate) use backend_error::BackendError;
+#[cfg(all(target_arch = "wasm32", target_os = "wasi"))]
+pub(crate) use wasi_nn_backend_error::BackendError;
 
 /// wasi-nn-safe API error enum
 #[derive(thiserror::Error, Debug)]
