@@ -47,7 +47,7 @@ impl<T> SharedSlice<T> {
 
     #[inline(always)]
     pub fn subslice(&self, start: usize, len: usize) -> Option<Self> {
-        if self.start + start >= self.len || self.start + start + len >= self.len {
+        if start >= self.len || start + len > self.len {
             return None;
         }
         Some(Self {
@@ -107,9 +107,15 @@ mod test {
         let sub_1 = full.subslice(1, 3);
         let sub_2 = full.subslice(2, 3);
         let sub_3 = full.subslice(3, 5);
+        let sub_4 = full.subslice(4, 1).unwrap().subslice(0, 1);
         assert!(sub_1.is_some());
-        assert!(sub_2.is_none());
+        assert!(sub_2.is_some());
         assert!(sub_3.is_none());
+        assert!(sub_4.is_some());
+
+        assert_eq!(*sub_2.as_ref().unwrap().get(0).unwrap(), 3);
+        assert_eq!(*sub_2.as_ref().unwrap().get(1).unwrap(), 4);
+        assert_eq!(*sub_2.as_ref().unwrap().get(2).unwrap(), 5);
 
         let full_copy = sub_1.as_ref().unwrap().full();
 
