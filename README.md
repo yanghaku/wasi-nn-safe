@@ -20,13 +20,13 @@ unsafe [wasi-nn] APIs.
 
 ```toml
 [dependencies]
-wasi-nn-safe = "0"
+wasi-nn-safe = "1"
 ```
 
 ## Quick Start
 
 ```rust
-use wasi_nn_safe::{GraphBuilder, TensorType};
+use wasi_nn_safe::{ExecutionTarget, GraphBuilder, GraphEncoding, TensorType};
 
 fn test(model_path: &'static str) -> Result<(), wasi_nn_safe::Error> {
     // prepare input and output buffer.
@@ -35,8 +35,9 @@ fn test(model_path: &'static str) -> Result<(), wasi_nn_safe::Error> {
     // the input and output buffer can be any sized type, such as u8, f32, etc.
     let mut output_buffer = vec![0f32; 1001];
 
-    // build a tflite graph from file.  (graph builder default with tflite and cpu).
-    let graph = GraphBuilder::default().build_from_files([model_path])?;
+    // build a tflite graph from file.
+    let graph = GraphBuilder::new(GraphEncoding::TensorflowLite, ExecutionTarget::CPU)
+        .build_from_files([model_path])?;
     // init graph execution context for this graph.
     let mut ctx = graph.init_execution_context()?;
     // set input
