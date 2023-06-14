@@ -7,7 +7,7 @@ use crate::{syscall, Error, TensorType};
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 #[repr(C)]
 pub enum GraphEncoding {
-    Openvino,
+    Openvino = 0,
     Onnx,
     Tensorflow,
     Pytorch,
@@ -19,7 +19,7 @@ pub enum GraphEncoding {
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 #[repr(C)]
 pub enum ExecutionTarget {
-    CPU,
+    CPU = 0,
     GPU,
     TPU,
 }

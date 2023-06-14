@@ -26,14 +26,13 @@ jobs:
       - name: build wasmedge from source with tflite backend
         run: |
           bash -c "\
-          export WASMEDGE_PATH=~/.wasmedge;\
           git clone https://github.com/WasmEdge/WasmEdge;\
           cd ./WasmEdge;\
           cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
-          -DWASMEDGE_PLUGIN_WASI_NN_BACKEND=TensorflowLite -DCMAKE_INSTALL_PREFIX=${WASMEDGE_PATH} .;\
+          -DWASMEDGE_PLUGIN_WASI_NN_BACKEND=TensorflowLite -DCMAKE_INSTALL_PREFIX=~/.wasmedge .;\
           cmake --build build;\
           cmake --install build;\
-          cp build/_deps/wasmedgetensorflowdepslite-src/libtensorflowlite_c.so ${WASMEDGE_PATH}/lib/;"
+          cp build/_deps/wasmedgetensorflowdepslite-src/libtensorflowlite_c.so ~/.wasmedge/lib/;"
 
       #      - name: init wasmedge environment
       #        run: ./scripts/wasmedge-init.sh
