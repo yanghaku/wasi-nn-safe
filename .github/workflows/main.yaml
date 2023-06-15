@@ -10,15 +10,32 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    container:
+      image: wasmedge/wasmedge:latest
     steps:
-      - name: checkout
-        uses: actions/checkout@main
+      - uses: actions/checkout@v2
 
-      - name: install curl and rust
-        run: ./scripts/rust-init.sh
+      - name: install stable rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
 
-      - name: init wasmedge environment
-        run: ./scripts/wasmedge-init.sh
+      - name: install rust wasm32-wasi
+        run: rustup target add wasm32-wasi
+
+      - name: build wasmedge from source with tflite backend
+        run: |
+          bash -c "\
+          git clone https://github.com/WasmEdge/WasmEdge;\
+          cd ./WasmEdge;\
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+          -DWASMEDGE_PLUGIN_WASI_NN_BACKEND=TensorflowLite -DCMAKE_INSTALL_PREFIX=~/.wasmedge .;\
+          cmake --build build;\
+          cmake --install build;\
+          cp build/_deps/wasmedgetensorflowdepslite-src/libtensorflowlite_c.so ~/.wasmedge/lib/;"
+
+      #      - name: init wasmedge environment
+      #        run: ./scripts/wasmedge-init.sh
 
       - name: test
         run: cargo test --release -- --nocapture

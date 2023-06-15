@@ -1,6 +1,6 @@
 mod common;
 use common::*;
-use wasi_nn_safe::{GraphBuilder, GraphEncoding, GraphExecutionTarget, TensorType};
+use wasi_nn_safe::{ExecutionTarget, GraphBuilder, GraphEncoding, TensorType};
 
 fn test(model_path: &'static str) -> Result<(), wasi_nn_safe::Error> {
     // prepare input and output buffer.
@@ -8,8 +8,9 @@ fn test(model_path: &'static str) -> Result<(), wasi_nn_safe::Error> {
     let input_dim = vec![1, 224, 224, 3];
     let mut output_buffer = vec![0f32; 1001];
 
-    // build a tflite graph from file.  (graph builder default with tflite and cpu).
-    let graph = GraphBuilder::default().build_from_files([model_path])?;
+    // build a tflite graph from file.
+    let graph = GraphBuilder::new(GraphEncoding::TensorflowLite, ExecutionTarget::CPU)
+        .build_from_files([model_path])?;
     // init graph execution context for this graph.
     let mut ctx = graph.init_execution_context()?;
     // set input
@@ -35,9 +36,9 @@ fn test_doc_example() {
 #[cfg(all(target_arch = "wasm32", target_os = "wasi"))]
 fn test_inference() {
     // load and build graph
-    let model_binary = std::fs::read(MODEL_FILE).unwrap();
-    let graph = GraphBuilder::new(GraphEncoding::TensorflowLite, GraphExecutionTarget::CPU)
-        .build_from_bytes([model_binary.clone()].into_iter())
+    let model_binary = [std::fs::read(MODEL_FILE).unwrap()];
+    let graph = GraphBuilder::new(GraphEncoding::TensorflowLite, ExecutionTarget::CPU)
+        .build_from_bytes(&model_binary)
         .unwrap();
 
     // prepare inputs and outputs buffer
@@ -62,7 +63,7 @@ fn test_inference() {
     // for test
     let wasi_nn_output = unsafe {
         get_wasi_nn_output(
-            &model_binary,
+            &model_binary[0],
             &input_data,
             &input_dimensions.to_vec(),
             output_len,

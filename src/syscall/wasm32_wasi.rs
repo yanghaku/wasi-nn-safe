@@ -1,6 +1,6 @@
 use crate::error::BackendError;
 use crate::tensor::Tensor;
-use crate::{Error, GraphEncoding, GraphExecutionTarget};
+use crate::{Error, ExecutionTarget, GraphEncoding};
 
 pub(crate) type GraphHandle = usize;
 pub(crate) type GraphExecutionContextHandle = usize;
@@ -9,7 +9,7 @@ pub(crate) type GraphExecutionContextHandle = usize;
 pub(crate) fn load(
     graph_builder_array: &[&[u8]],
     encoding: GraphEncoding,
-    target: GraphExecutionTarget,
+    target: ExecutionTarget,
 ) -> Result<GraphHandle, Error> {
     let mut graph_handle = 0;
     let res = unsafe {
